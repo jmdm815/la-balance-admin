@@ -2,7 +2,7 @@ import { Redis } from "@upstash/redis";
 
 export const redis = Redis.fromEnv();
 
-export type OrderStatus = "new" | "preparing" | "ready";
+export type OrderStatus = "new" | "preparing" | "ready" | "picked_up" | "cancelled";
 
 export type OrderItem = {
   name: string;

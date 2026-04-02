@@ -7,7 +7,7 @@ function corsHeaders(origin?: string | null) {
 
   return {
     "Access-Control-Allow-Origin": finalOrigin,
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Vary": "Origin"
   };
@@ -68,6 +68,18 @@ export async function PATCH(req: Request) {
   await saveOrders(orders);
 
   return Response.json({ success: true, order: target }, {
+    headers: corsHeaders(req.headers.get("origin"))
+  });
+}
+
+export async function DELETE(req: Request) {
+  const data = await req.json();
+  const orders = await getOrders();
+  const filtered = orders.filter((order) => order.id !== data.id);
+
+  await saveOrders(filtered);
+
+  return Response.json({ success: true }, {
     headers: corsHeaders(req.headers.get("origin"))
   });
 }

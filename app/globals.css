@@ -5,6 +5,9 @@
   --white: #ffffff;
   --soft-red: #fff1f1;
   --soft-green: #eefaf3;
+  --soft-blue: #eef4ff;
+  --soft-gray: #f3f4f6;
+  --soft-yellow: #f8f2dd;
   --border: #e4e4e4;
 }
 
@@ -47,6 +50,35 @@ body {
 }
 
 .hero-card { padding: 20px; border-top: 6px solid var(--red); }
+
+.status-section + .status-section {
+  margin-top: 26px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.section-count {
+  min-width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #111111;
+  color: white;
+  font-weight: 800;
+}
+
 .orders-grid { display: grid; gap: 16px; }
 .empty-panel { padding: 26px; font-weight: 700; }
 .order-card { padding: 18px; border-left: 6px solid var(--green); }
@@ -63,14 +95,16 @@ body {
 }
 
 .status-new { background: var(--soft-red); color: var(--red); }
-.status-preparing { background: #f8f2dd; color: #8a6200; }
+.status-preparing { background: var(--soft-yellow); color: #8a6200; }
 .status-ready { background: var(--soft-green); color: var(--green); }
+.status-picked_up { background: var(--soft-blue); color: #1f4bd8; }
+.status-cancelled { background: var(--soft-gray); color: #555; }
 
 .items-list { display: grid; gap: 10px; margin-top: 14px; }
 .item-row { border-top: 1px solid var(--border); padding-top: 10px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
-.primary-button, .secondary-button {
+.primary-button, .secondary-button, .danger-button {
   border: none;
   border-radius: 999px;
   padding: 12px 16px;
@@ -81,6 +115,7 @@ body {
 
 .primary-button { background: linear-gradient(135deg, var(--green), #007536); color: var(--white); }
 .secondary-button { background: #111111; color: var(--white); }
+.danger-button { background: linear-gradient(135deg, var(--red), #c4141d); color: white; }
 .compact { width: auto; }
 
 @media (max-width: 960px) {

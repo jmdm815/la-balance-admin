@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type OrderStatus = "new" | "preparing" | "ready";
+type OrderStatus = "new" | "preparing" | "ready" | "picked_up" | "cancelled";
 type OrderItem = { name: string; price: number; quantity: number; instructions?: string };
 type Order = {
   id: string;
@@ -17,8 +17,72 @@ type Order = {
 const labels: Record<OrderStatus, string> = {
   new: "New order",
   preparing: "Preparing",
-  ready: "Ready for pickup"
+  ready: "Ready for pickup",
+  picked_up: "Picked up",
+  cancelled: "Cancelled"
 };
+
+const sectionOrder: OrderStatus[] = ["new", "preparing", "ready", "picked_up", "cancelled"];
+
+function OrderCard({
+  order,
+  onStatusChange,
+  onDelete
+}: {
+  order: Order;
+  onStatusChange: (id: string, status: OrderStatus) => void;
+  onDelete: (id: string) => void;
+}) {
+  const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const nextStatuses: OrderStatus[] = ["new", "preparing", "ready", "picked_up", "cancelled"];
+
+  return (
+    <article className="order-card">
+      <div className="order-header">
+        <div>
+          <div className="order-meta">
+            <span className="order-id">{order.id}</span>
+            <span className={`status-pill status-${order.status}`}>{labels[order.status]}</span>
+          </div>
+          <h3>{order.customerName}</h3>
+          <p className="muted">{order.phone} • {order.pickupType === "in-store" ? "In-store pickup" : "Drive-through pickup"}</p>
+          <p className="muted">Placed at {new Date(order.placedAt).toLocaleString()}</p>
+        </div>
+        <div className="total-box">
+          <span className="muted">Order total</span>
+          <strong>${total.toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div className="items-list">
+        {order.items.map((item, index) => (
+          <div key={index} className="item-row">
+            <div>
+              <strong>{item.quantity}× {item.name}</strong>
+              <p className="muted">{item.instructions ? `Instructions: ${item.instructions}` : "No custom instructions"}</p>
+            </div>
+            <span>${(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="actions">
+        {nextStatuses.map((status) => (
+          <button
+            key={status}
+            className={order.status === status ? "primary-button compact" : "secondary-button compact"}
+            onClick={() => onStatusChange(order.id, status)}
+          >
+            {labels[status]}
+          </button>
+        ))}
+        <button className="danger-button compact" onClick={() => onDelete(order.id)}>
+          Delete order
+        </button>
+      </div>
+    </article>
+  );
+}
 
 export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -50,23 +114,37 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteOrder(id: string) {
+    try {
+      const response = await fetch("/api/orders", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      if (!response.ok) throw new Error(`Failed to delete order: ${response.status}`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete order");
+    }
+  }
+
   useEffect(() => {
     loadOrders();
   }, []);
 
-  const sortedOrders = useMemo(
-    () => [...orders].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime()),
-    [orders]
-  );
+  const groupedOrders = useMemo(() => {
+    const sorted = [...orders].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+    return Object.fromEntries(sectionOrder.map((status) => [status, sorted.filter((order) => order.status === status)])) as Record<OrderStatus, Order[]>;
+  }, [orders]);
 
   return (
     <main className="page-shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">CORS-fixed admin</p>
+          <p className="eyebrow">Expanded workflow</p>
           <h2>Incoming pickup orders</h2>
           <p className="hero-copy">
-            This build focuses on reliable cross-site order submission from your customer app.
+            Orders are now split into live sections for new, preparing, ready, picked up, and cancelled.
           </p>
         </div>
         <div className="hero-card">
@@ -75,59 +153,29 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="orders-grid">
-        {sortedOrders.length === 0 ? (
-          <div className="empty-panel">No orders have been received yet.</div>
-        ) : (
-          sortedOrders.map((order) => {
-            const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      {sectionOrder.map((status) => (
+        <section key={status} className="status-section">
+          <div className="section-heading">
+            <h3>{labels[status]}</h3>
+            <span className="section-count">{groupedOrders[status].length}</span>
+          </div>
 
-            return (
-              <article key={order.id} className="order-card">
-                <div className="order-header">
-                  <div>
-                    <div className="order-meta">
-                      <span className="order-id">{order.id}</span>
-                      <span className={`status-pill status-${order.status}`}>{labels[order.status]}</span>
-                    </div>
-                    <h3>{order.customerName}</h3>
-                    <p className="muted">{order.phone} • {order.pickupType === "in-store" ? "In-store pickup" : "Drive-through pickup"}</p>
-                    <p className="muted">Placed at {new Date(order.placedAt).toLocaleString()}</p>
-                  </div>
-                  <div className="total-box">
-                    <span className="muted">Order total</span>
-                    <strong>${total.toFixed(2)}</strong>
-                  </div>
-                </div>
-
-                <div className="items-list">
-                  {order.items.map((item, index) => (
-                    <div key={index} className="item-row">
-                      <div>
-                        <strong>{item.quantity}× {item.name}</strong>
-                        <p className="muted">{item.instructions ? `Instructions: ${item.instructions}` : "No custom instructions"}</p>
-                      </div>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="actions">
-                  {(["new", "preparing", "ready"] as OrderStatus[]).map((status) => (
-                    <button
-                      key={status}
-                      className={order.status === status ? "primary-button compact" : "secondary-button compact"}
-                      onClick={() => updateStatus(order.id, status)}
-                    >
-                      {labels[status]}
-                    </button>
-                  ))}
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
+          {groupedOrders[status].length === 0 ? (
+            <div className="empty-panel">No orders in this section.</div>
+          ) : (
+            <div className="orders-grid">
+              {groupedOrders[status].map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onStatusChange={updateStatus}
+                  onDelete={deleteOrder}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ))}
     </main>
   );
 }

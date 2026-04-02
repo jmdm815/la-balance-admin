@@ -1,11 +1,10 @@
-# Admin App CORS Fix
+# Admin App With Expanded Order Sections
 
-This version is focused on reliable order submission from the customer site.
-
-## Includes
-- Upstash Redis persistence
-- explicit OPTIONS handler for CORS
-- GET/POST/PATCH routes with Access-Control-Allow-Origin headers
+This version adds:
+- a Picked up section
+- a Cancelled section
+- a Delete order button
+- status buttons for new, preparing, ready, picked up, and cancelled
 
 ## Required environment variables
 - UPSTASH_REDIS_REST_URL
