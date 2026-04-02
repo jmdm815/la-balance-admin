@@ -1,55 +1,73 @@
-type OrderStatus = "new" | "preparing" | "ready";
-type OrderItem = { name: string; price: number; quantity: number; instructions?: string };
-type Order = {
-  id: string;
-  customerName: string;
-  phone: string;
-  pickupType: "in-store" | "drive-through";
-  items: OrderItem[];
-  status: OrderStatus;
-  placedAt: string;
-};
+import { buildOrderId, getOrders, saveOrders, type Order, type OrderStatus } from "@/lib/redis";
 
-const globalForOrders = globalThis as unknown as { ordersStore?: Order[] };
+function corsHeaders(origin?: string | null) {
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+  const requestOrigin = origin || "";
+  const finalOrigin = allowedOrigin === "*" ? "*" : (requestOrigin === allowedOrigin ? allowedOrigin : allowedOrigin);
 
-if (!globalForOrders.ordersStore) {
-  globalForOrders.ordersStore = [];
+  return {
+    "Access-Control-Allow-Origin": finalOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin"
+  };
 }
 
-function getOrders() {
-  return globalForOrders.ordersStore as Order[];
+export async function OPTIONS(req: Request) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(req.headers.get("origin"))
+  });
 }
 
-export async function GET() {
-  return Response.json(getOrders());
+export async function GET(req: Request) {
+  const orders = await getOrders();
+  return Response.json(orders, {
+    headers: corsHeaders(req.headers.get("origin"))
+  });
 }
 
 export async function POST(req: Request) {
   const data = await req.json();
+  const orders = await getOrders();
 
   const order: Order = {
-    id: `ORD-${Date.now().toString().slice(-6)}`,
+    id: buildOrderId(),
     customerName: data.customerName,
     phone: data.phone,
     pickupType: data.pickupType,
-    items: data.items ?? [],
+    items: Array.isArray(data.items) ? data.items : [],
     status: "new",
     placedAt: new Date().toISOString()
   };
 
-  getOrders().unshift(order);
-  return Response.json({ success: true, order });
+  orders.unshift(order);
+  await saveOrders(orders);
+
+  return Response.json({ success: true, order }, {
+    headers: corsHeaders(req.headers.get("origin"))
+  });
 }
 
 export async function PATCH(req: Request) {
   const data = await req.json();
-  const orders = getOrders();
+  const orders = await getOrders();
   const target = orders.find((order) => order.id === data.id);
 
   if (!target) {
-    return new Response(JSON.stringify({ error: "Order not found" }), { status: 404 });
+    return new Response(JSON.stringify({ error: "Order not found" }), {
+      status: 404,
+      headers: {
+        ...corsHeaders(req.headers.get("origin")),
+        "Content-Type": "application/json"
+      }
+    });
   }
 
-  target.status = data.status;
-  return Response.json({ success: true, order: target });
+  target.status = data.status as OrderStatus;
+  await saveOrders(orders);
+
+  return Response.json({ success: true, order: target }, {
+    headers: corsHeaders(req.headers.get("origin"))
+  });
 }

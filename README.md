@@ -1,18 +1,13 @@
-# Admin App
+# Admin App CORS Fix
 
-This is the staff dashboard and API receiver.
+This version is focused on reliable order submission from the customer site.
 
-## Logo
-The attached restaurant logo has already been added to:
-- `public/logo.svg`
+## Includes
+- Upstash Redis persistence
+- explicit OPTIONS handler for CORS
+- GET/POST/PATCH routes with Access-Control-Allow-Origin headers
 
-## Theme colors
-The dashboard now matches the logo colors:
-- red `#ed1c24`
-- green `#009444`
-- black `#111111`
-- white `#ffffff`
-
-## Important note
-This starter receives orders and shows them in the dashboard, but it stores them only in memory.
-For production, connect this to Supabase or Firebase.
+## Required environment variables
+- UPSTASH_REDIS_REST_URL
+- UPSTASH_REDIS_REST_TOKEN
+- ALLOWED_ORIGIN=https://your-customer-app.vercel.app

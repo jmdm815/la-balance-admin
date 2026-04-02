@@ -22,26 +22,36 @@ const labels: Record<OrderStatus, string> = {
 
 export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState("");
 
   async function loadOrders() {
-    const response = await fetch("/api/orders", { cache: "no-store" });
-    const data = await response.json();
-    setOrders(data);
+    try {
+      const response = await fetch("/api/orders", { cache: "no-store" });
+      if (!response.ok) throw new Error(`Failed to load orders: ${response.status}`);
+      const data = await response.json();
+      setOrders(data);
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load orders");
+    }
   }
 
   async function updateStatus(id: string, status: OrderStatus) {
-    await fetch("/api/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status })
-    });
-    loadOrders();
+    try {
+      const response = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status })
+      });
+      if (!response.ok) throw new Error(`Failed to update order: ${response.status}`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update order");
+    }
   }
 
   useEffect(() => {
     loadOrders();
-    const timer = setInterval(loadOrders, 4000);
-    return () => clearInterval(timer);
   }, []);
 
   const sortedOrders = useMemo(
@@ -53,15 +63,15 @@ export default function AdminPage() {
     <main className="page-shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">Live order queue</p>
+          <p className="eyebrow">CORS-fixed admin</p>
           <h2>Incoming pickup orders</h2>
           <p className="hero-copy">
-            Orders are sorted by time placed. Staff can move each one from new to preparing to ready.
+            This build focuses on reliable cross-site order submission from your customer app.
           </p>
         </div>
         <div className="hero-card">
-          <strong>Note</strong>
-          <p>This starter stores orders in memory only. Use Supabase or Firebase next for production persistence.</p>
+          <strong>Status</strong>
+          <p>{error || "Admin app loaded successfully."}</p>
         </div>
       </section>
 

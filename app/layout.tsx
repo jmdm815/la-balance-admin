@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Image src="/logo.svg" alt="Restaurant logo" width={110} height={76} priority />
               <div>
                 <p className="brand-kicker">Kitchen Dashboard</p>
-                <h1 className="brand-name">Order Management</h1>
+                <p className="brand-name">Order Management</p>
               </div>
             </div>
           </div>
